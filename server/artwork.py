@@ -1,3 +1,4 @@
+
 import os
 import json
 import base64
@@ -348,11 +349,15 @@ def delete_artwork(auth_header, artwork_id):
     cursor = connection.cursor()
     
     try:
+        print(f"Attempting to delete artwork with ID: {artwork_id}")
+        print(f"User is artist: {is_artist}, User is admin: {is_admin}, Artist ID from token: {artist_id}")
+        
         # Check if the artwork exists and get its current data
         cursor.execute("SELECT * FROM artworks WHERE id = %s", (artwork_id,))
         existing_artwork = cursor.fetchone()
         
         if not existing_artwork:
+            print(f"No artwork found with ID: {artwork_id}")
             return {"error": f"Artwork with ID {artwork_id} not found"}
         
         # If user is artist, check if they own this artwork
@@ -360,8 +365,21 @@ def delete_artwork(auth_header, artwork_id):
             column_names = [col[0] for col in cursor.description]
             artwork_dict = dict(zip(column_names, existing_artwork))
             
-            if str(artwork_dict.get('artist_id')) != str(artist_id):
+            # Debug the artist_id values
+            artwork_artist_id = artwork_dict.get('artist_id')
+            print(f"Artwork artist_id: {artwork_artist_id} (type: {type(artwork_artist_id)})")
+            print(f"User artist_id: {artist_id} (type: {type(artist_id)})")
+            
+            # Check if the artwork belongs to this artist
+            # First try direct comparison, then string comparison as fallback
+            if artwork_artist_id is None:
+                print("Error: Artwork has no artist_id associated with it")
+                return {"error": "Unauthorized: This artwork has no artist associated with it"}
+            elif str(artwork_artist_id) != str(artist_id):
+                print(f"Authorization failed: Artwork artist_id ({artwork_artist_id}) doesn't match token artist_id ({artist_id})")
                 return {"error": "Unauthorized: You can only delete your own artworks"}
+            else:
+                print(f"Authorization successful: Artist {artist_id} owns artwork {artwork_id}")
         
         # Delete the artwork
         cursor.execute("DELETE FROM artworks WHERE id = %s", (artwork_id,))
