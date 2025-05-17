@@ -60,3 +60,46 @@ def get_artwork(artwork_id):
         if connection.is_connected():
             cursor.close()
             connection.close()
+
+def get_all_artworks():
+    """Get all artworks"""
+    connection = get_db_connection()
+    if connection is None:
+        return {"error": "Database connection failed"}
+    
+    cursor = connection.cursor()
+    
+    try:
+        query = """
+        SELECT id, title, artist, description, price, image_url, 
+               dimensions, medium, year, status, artist_id
+        FROM artworks
+        ORDER BY id DESC
+        """
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        
+        artworks = []
+        for row in cursor.fetchall():
+            # Convert each row to a dictionary
+            column_names = [col[0] for col in cursor.description]
+            artwork = dict(zip(column_names, row))
+            
+            # Convert id to string to match frontend expectations
+            artwork['id'] = str(artwork['id'])
+            
+            # Format image URL if needed
+            if artwork['image_url'] and not artwork['image_url'].startswith('/static/'):
+                artwork['image_url'] = f"/static/uploads/{os.path.basename(artwork['image_url'])}"
+            
+            artworks.append(artwork)
+        
+        print(f"Retrieved {len(artworks)} artworks")
+        return {"artworks": artworks}
+    except Exception as e:
+        print(f"Error getting artworks: {e}")
+        return {"error": str(e)}
+    finally:
+        if connection.is_connected():
+            cursor.close()
+            connection.close()
