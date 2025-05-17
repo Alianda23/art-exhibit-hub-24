@@ -1,4 +1,3 @@
-
 import os
 import json
 import http.server
@@ -9,6 +8,7 @@ from http import HTTPStatus
 from datetime import datetime
 from urllib.parse import parse_qs, urlparse
 from decimal import Decimal
+from database import get_db_connection
 
 # Import modules
 from auth import register_user, login_user, login_admin, register_artist, login_artist
