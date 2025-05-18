@@ -1,4 +1,3 @@
-
 import os
 import json
 import base64
@@ -9,6 +8,9 @@ from database import get_db_connection, json_dumps
 
 def get_artwork(artwork_id):
     """Get a specific artwork by ID"""
+    # Debug the artwork ID being used
+    print(f"Attempting to fetch artwork with ID: {artwork_id}")
+    
     connection = get_db_connection()
     if connection is None:
         return {"error": "Database connection failed"}
@@ -16,9 +18,6 @@ def get_artwork(artwork_id):
     cursor = connection.cursor()
     
     try:
-        # Debug the artwork ID being used
-        print(f"Attempting to fetch artwork with ID: {artwork_id}")
-        
         query = """
         SELECT id, title, artist, description, price, image_url, 
                dimensions, medium, year, status, artist_id
@@ -224,6 +223,7 @@ def update_artwork(auth_header, artwork_id, artwork_data):
     is_artist = payload.get("is_artist", False)
     artist_id = payload.get("sub")
     
+    # Important: Make sure we have authorization to update
     if not (is_admin or is_artist):
         return {"error": "Unauthorized: Admin or artist privileges required"}
     
@@ -247,22 +247,26 @@ def update_artwork(auth_header, artwork_id, artwork_data):
             print(f"No artwork found with ID: {artwork_id}")
             return {"error": f"Artwork with ID {artwork_id} not found"}
         
-        # If user is artist, check if they own this artwork
-        if is_artist and not is_admin:
-            column_names = [col[0] for col in cursor.description]
-            artwork_dict = dict(zip(column_names, existing_artwork))
-            
-            # Debug the artist_id values
-            artwork_artist_id = artwork_dict.get('artist_id')
-            print(f"Artwork artist_id: {artwork_artist_id} (type: {type(artwork_artist_id)})")
-            print(f"User artist_id: {artist_id} (type: {type(artist_id)})")
-            
-            # Check if the artwork belongs to this artist
-            # First try direct comparison, then string comparison as fallback
+        # Extract artwork details into a dictionary
+        column_names = [col[0] for col in cursor.description]
+        artwork_dict = dict(zip(column_names, existing_artwork))
+        artwork_artist_id = artwork_dict.get('artist_id')
+        
+        print(f"Artwork artist_id: {artwork_artist_id} (type: {type(artwork_artist_id)})")
+        print(f"User artist_id: {artist_id} (type: {type(artist_id)})")
+        
+        # If admin, allow the update regardless of ownership
+        if is_admin:
+            print("User is admin, allowing update regardless of ownership")
+        # If artist, check ownership (only if not admin)
+        elif is_artist:
+            # Check if the artwork has an artist_id at all
             if artwork_artist_id is None:
                 print("Error: Artwork has no artist_id associated with it")
                 return {"error": "Unauthorized: This artwork has no artist associated with it"}
-            elif str(artwork_artist_id) != str(artist_id):
+            
+            # Convert both IDs to strings for comparison
+            if str(artwork_artist_id) != str(artist_id):
                 print(f"Authorization failed: Artwork artist_id ({artwork_artist_id}) doesn't match token artist_id ({artist_id})")
                 return {"error": "Unauthorized: You can only update your own artworks"}
             else:
@@ -356,6 +360,7 @@ def delete_artwork(auth_header, artwork_id):
     is_artist = payload.get("is_artist", False)
     artist_id = payload.get("sub")
     
+    # Important: Make sure we have authorization to delete
     if not (is_admin or is_artist):
         return {"error": "Unauthorized: Admin or artist privileges required"}
     
@@ -378,22 +383,26 @@ def delete_artwork(auth_header, artwork_id):
             print(f"No artwork found with ID: {artwork_id}")
             return {"error": f"Artwork with ID {artwork_id} not found"}
         
-        # If user is artist, check if they own this artwork
-        if is_artist and not is_admin:
-            column_names = [col[0] for col in cursor.description]
-            artwork_dict = dict(zip(column_names, existing_artwork))
-            
-            # Debug the artist_id values
-            artwork_artist_id = artwork_dict.get('artist_id')
-            print(f"Artwork artist_id: {artwork_artist_id} (type: {type(artwork_artist_id)})")
-            print(f"User artist_id: {artist_id} (type: {type(artist_id)})")
-            
-            # Check if the artwork belongs to this artist
-            # First try direct comparison, then string comparison as fallback
+        # Extract artwork details into a dictionary
+        column_names = [col[0] for col in cursor.description]
+        artwork_dict = dict(zip(column_names, existing_artwork))
+        artwork_artist_id = artwork_dict.get('artist_id')
+        
+        print(f"Artwork artist_id: {artwork_artist_id} (type: {type(artwork_artist_id)})")
+        print(f"User artist_id: {artist_id} (type: {type(artist_id)})")
+        
+        # If admin, allow the delete regardless of ownership
+        if is_admin:
+            print("User is admin, allowing delete regardless of ownership")
+        # If artist, check ownership (only if not admin)
+        elif is_artist:
+            # Check if the artwork has an artist_id at all
             if artwork_artist_id is None:
                 print("Error: Artwork has no artist_id associated with it")
                 return {"error": "Unauthorized: This artwork has no artist associated with it"}
-            elif str(artwork_artist_id) != str(artist_id):
+            
+            # Convert both IDs to strings for comparison
+            if str(artwork_artist_id) != str(artist_id):
                 print(f"Authorization failed: Artwork artist_id ({artwork_artist_id}) doesn't match token artist_id ({artist_id})")
                 return {"error": "Unauthorized: You can only delete your own artworks"}
             else:
