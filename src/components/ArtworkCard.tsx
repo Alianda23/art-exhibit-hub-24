@@ -13,12 +13,9 @@ interface ArtworkCardProps {
 }
 
 const ArtworkCard = ({ artwork }: ArtworkCardProps) => {
-  // Handle both image_url and imageUrl field name differences and null values
-  const imageSource = artwork.image_url || artwork.imageUrl || null;
-  
-  // Process the image URL before rendering - this is crucial
-  const imageUrl = createImageSrc(imageSource);
-  console.log(`ArtworkCard: Loading image for ${artwork.title}: ${imageSource} → ${imageUrl}`);
+  // Process the image URL before rendering - using imageUrl property directly
+  const imageUrl = createImageSrc(artwork.imageUrl);
+  console.log(`ArtworkCard: Loading image for ${artwork.title}: ${artwork.imageUrl} → ${imageUrl}`);
   
   return (
     <div className="group rounded-lg overflow-hidden bg-white shadow-md hover:shadow-lg transition-all duration-300">

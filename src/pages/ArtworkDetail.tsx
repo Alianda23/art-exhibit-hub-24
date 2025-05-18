@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -88,10 +87,9 @@ const ArtworkDetail = () => {
     );
   }
 
-  // Handle image_url vs imageUrl field name differences
-  const imageSource = artwork.image_url || artwork.imageUrl || null;
-  const imageUrl = createImageSrc(imageSource);
-  console.log(`ArtworkDetail: Image for ${artwork.title}: ${imageSource} → ${imageUrl}`);
+  // Process the image URL before rendering - using imageUrl property directly
+  const imageUrl = createImageSrc(artwork.imageUrl);
+  console.log(`ArtworkDetail: Image for ${artwork.title}: ${artwork.imageUrl} → ${imageUrl}`);
   
   const isSold = artwork.status === 'sold';
 

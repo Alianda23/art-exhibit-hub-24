@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -48,12 +47,10 @@ const ArtworkForm: React.FC<ArtworkFormProps> = ({
 }) => {
   const { toast } = useToast();
   
-  // Process initial image URL if it exists
+  // Process initial image URL if it exists - fixed to use only imageUrl
   let initialImageUrl = null;
   if (initialData?.imageUrl) {
     initialImageUrl = createImageSrc(initialData.imageUrl);
-  } else if (initialData?.image_url) {
-    initialImageUrl = createImageSrc(initialData.image_url);
   }
   
   const [previewImage, setPreviewImage] = useState<string | null>(initialImageUrl);
@@ -115,7 +112,7 @@ const ArtworkForm: React.FC<ArtworkFormProps> = ({
   const handleSubmit = async (values: ArtworkFormValues) => {
     try {
       // If no image was uploaded or changed, use the existing image
-      let imageUrl = initialData?.imageUrl || initialData?.image_url || "";
+      let imageUrl = initialData?.imageUrl || "";
       
       if (imageFile) {
         // Use the local preview data URL as the imageUrl
