@@ -11,6 +11,11 @@ import { useToast } from '@/hooks/use-toast';
 const ArtworkRecommendations = () => {
   const [recommendedArtworks, setRecommendedArtworks] = useState<Artwork[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userPreferences, setUserPreferences] = useState<string[]>(() => {
+    // Try to get user preferences from localStorage
+    const savedPreferences = localStorage.getItem('artPreferences');
+    return savedPreferences ? JSON.parse(savedPreferences) : ['contemporary', 'abstract'];
+  });
   const { toast } = useToast();
 
   useEffect(() => {
@@ -20,8 +25,8 @@ const ArtworkRecommendations = () => {
         const allArtworks = await getAllArtworks();
         console.log("Fetched artworks for recommendations:", allArtworks.length);
         
-        // Generate recommendations from all artworks
-        const recommendations = generateRecommendations(allArtworks);
+        // Generate AI recommendations from all artworks
+        const recommendations = generateAIRecommendations(allArtworks);
         setRecommendedArtworks(recommendations);
       } catch (error) {
         console.error('Failed to fetch artwork recommendations:', error);
@@ -36,20 +41,118 @@ const ArtworkRecommendations = () => {
     };
     
     fetchAndGenerateRecommendations();
-  }, [toast]);
+  }, [toast, userPreferences]);
 
-  // Generate personalized recommendations
-  const generateRecommendations = (artworks: Artwork[]): Artwork[] => {
-    console.log("Generating recommendations");
+  // AI-based recommendation algorithm that determines trends and user preferences
+  const generateAIRecommendations = (artworks: Artwork[]): Artwork[] => {
+    console.log("Generating AI-powered recommendations");
     
-    // For demonstration purposes, pick 3 random artworks as "recommendations"
     if (artworks.length <= 3) {
       return artworks;
-    } else {
-      // Shuffle array and pick first 3
-      const shuffled = [...artworks].sort(() => 0.5 - Math.random());
-      return shuffled.slice(0, 3);
     }
+    
+    // Get trending artworks (we'll use a simple algorithm for this demo)
+    // In a real app, this would be based on view counts, purchase history, etc.
+    const trending = identifyTrendingArtworks(artworks);
+    
+    // Get personalized recommendations based on user preferences
+    const personalized = personalizeRecommendations(artworks, userPreferences);
+    
+    // Combine trending and personalized with priority on personalized
+    const combined = [...personalized];
+    
+    // Add trending items that aren't already in the personalized list
+    trending.forEach(artwork => {
+      if (!combined.some(item => item.id === artwork.id) && combined.length < 3) {
+        combined.push(artwork);
+      }
+    });
+    
+    // If we still don't have 3 recommendations, add random ones
+    if (combined.length < 3) {
+      const remaining = artworks.filter(artwork => 
+        !combined.some(item => item.id === artwork.id)
+      );
+      
+      const shuffled = [...remaining].sort(() => 0.5 - Math.random());
+      while (combined.length < 3 && shuffled.length > 0) {
+        combined.push(shuffled.pop()!);
+      }
+    }
+    
+    // Ensure we only return max 3 recommendations
+    return combined.slice(0, 3);
+  };
+
+  // Function to identify trending artworks based on characteristics
+  const identifyTrendingArtworks = (artworks: Artwork[]): Artwork[] => {
+    // This is a simplified version - in a real app, this would use actual analytics
+    // Algorithm: weight artworks by recency, popularity factors, and current art trends
+    
+    const weighted = artworks.map(artwork => {
+      let score = 0;
+      
+      // Higher score for newer artworks (assuming 'year' is a string)
+      if (artwork.year) {
+        const year = parseInt(artwork.year);
+        if (!isNaN(year) && year > 2020) {
+          score += 10;
+        } else if (!isNaN(year) && year > 2010) {
+          score += 5;
+        }
+      }
+      
+      // Higher score for trending mediums (simplified trend analysis)
+      const trendingMediums = ['digital', 'mixed media', 'acrylic'];
+      if (artwork.medium && trendingMediums.some(medium => 
+        artwork.medium.toLowerCase().includes(medium.toLowerCase()))) {
+        score += 8;
+      }
+      
+      // Higher score for certain keywords in title or description
+      const trendingKeywords = ['abstract', 'contemporary', 'modern', 'innovative'];
+      const textContent = `${artwork.title} ${artwork.description || ''}`.toLowerCase();
+      
+      trendingKeywords.forEach(keyword => {
+        if (textContent.includes(keyword.toLowerCase())) {
+          score += 5;
+        }
+      });
+      
+      return { artwork, score };
+    });
+    
+    // Sort by score and take top items
+    return weighted
+      .sort((a, b) => b.score - a.score)
+      .map(item => item.artwork)
+      .slice(0, 3);
+  };
+
+  // Function to personalize recommendations based on user preferences
+  const personalizeRecommendations = (artworks: Artwork[], preferences: string[]): Artwork[] => {
+    // This would normally be based on user history, likes, purchases, etc.
+    // Here we'll use the preferences array to match keywords
+    
+    const scored = artworks.map(artwork => {
+      let score = 0;
+      const textContent = `${artwork.title} ${artwork.description || ''} ${artwork.medium || ''} ${artwork.artist || ''}`.toLowerCase();
+      
+      // Score by matching preferences
+      preferences.forEach(pref => {
+        if (textContent.includes(pref.toLowerCase())) {
+          score += 10;
+        }
+      });
+      
+      return { artwork, score };
+    });
+    
+    // Sort by score and take top items
+    return scored
+      .sort((a, b) => b.score - a.score)
+      .map(item => item.artwork)
+      .slice(0, 2); // Get fewer personalized to leave room for trending
   };
 
   return (
@@ -59,7 +162,7 @@ const ArtworkRecommendations = () => {
           <div className="flex items-center gap-2">
             <Sparkles className="h-6 w-6 text-gold" />
             <h2 className="text-3xl md:text-4xl font-serif font-bold">
-              Featured <span className="text-gold">Recommendations</span>
+              AI-Powered <span className="text-gold">Recommendations</span>
             </h2>
           </div>
           <Link to="/artworks">
@@ -71,7 +174,7 @@ const ArtworkRecommendations = () => {
         
         <div className="artwork-grid">
           {loading ? (
-            <p className="text-center w-full">Loading recommendations...</p>
+            <p className="text-center w-full">Loading personalized recommendations...</p>
           ) : recommendedArtworks.length > 0 ? (
             recommendedArtworks.map((artwork) => (
               <ArtworkCard key={artwork.id} artwork={artwork} />
