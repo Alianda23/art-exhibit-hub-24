@@ -92,9 +92,11 @@ const ArtworkRecommendations = () => {
     const weighted = artworks.map(artwork => {
       let score = 0;
       
-      // Higher score for newer artworks (assuming 'year' is a string)
+      // Higher score for newer artworks
       if (artwork.year) {
-        const year = parseInt(artwork.year);
+        // Convert year to string before parsing to ensure type safety
+        const yearString = String(artwork.year);
+        const year = parseInt(yearString);
         if (!isNaN(year) && year > 2020) {
           score += 10;
         } else if (!isNaN(year) && year > 2010) {
