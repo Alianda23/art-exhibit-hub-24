@@ -8,12 +8,15 @@ const defaultExhibitionImages = [
   "/static/uploads/exhibition_20250419211948.jpg"
 ];
 
+// Default artwork image when none is provided
+const defaultArtworkImage = "/static/uploads/placeholder.jpg";
+
 // Process image URL to ensure it works with the server's structure
 export const getValidImageUrl = (url: string | undefined): string => {
   // Default fallback for empty or undefined URLs
   if (!url) {
-    console.log("Empty image URL, using placeholder");
-    return "http://localhost:8000/placeholder.svg";
+    console.log("Empty image URL, using default artwork image");
+    return `http://localhost:8000${defaultArtworkImage}`;
   }
   
   // If it's already a complete URL (http/https), use it as is
@@ -27,8 +30,8 @@ export const getValidImageUrl = (url: string | undefined): string => {
     // For very long base64 strings, they might be truncated in the database
     // If they're truncated, it's better to use a placeholder
     if (url.length < 100 || !url.includes(',')) {
-      console.log("Detected incomplete base64 image, using placeholder instead");
-      return "http://localhost:8000/placeholder.svg";
+      console.log("Detected incomplete base64 image, using default artwork image");
+      return `http://localhost:8000${defaultArtworkImage}`;
     }
     console.log("Using base64 image data");
     return url;
@@ -75,31 +78,27 @@ export const getValidImageUrl = (url: string | undefined): string => {
 };
 
 // Create a component-ready image URL with fallback
-export const createImageSrc = (url: string | undefined, defaultImage = "/placeholder.svg"): string => {
+export const createImageSrc = (url: string | undefined): string => {
   try {
     const processedUrl = getValidImageUrl(url);
     console.log(`Processing image URL: ${url} → ${processedUrl}`);
-    return processedUrl || `http://localhost:8000${defaultImage}`;
+    return processedUrl;
   } catch (error) {
     console.error("Error processing image URL:", error);
-    return `http://localhost:8000${defaultImage}`;
+    return `http://localhost:8000${defaultArtworkImage}`;
   }
 };
 
 // Handle image loading errors
-export const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>, fallbackSrc = "/placeholder.svg") => {
+export const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
   const target = e.target as HTMLImageElement;
   console.error(`Image failed to load: ${target.src}`);
   
   // Prevent infinite loop if fallback also fails
   target.onerror = null;
   
-  // Make sure we always use the full server URL for the fallback
-  if (!fallbackSrc.startsWith('http')) {
-    target.src = `http://localhost:8000${fallbackSrc}`;
-  } else {
-    target.src = fallbackSrc;
-  }
+  // Use the default artwork image as fallback
+  target.src = `http://localhost:8000${defaultArtworkImage}`;
 };
 
 // Preload images to ensure they're in the browser cache

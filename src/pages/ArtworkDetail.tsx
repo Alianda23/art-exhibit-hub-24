@@ -89,7 +89,7 @@ const ArtworkDetail = () => {
   }
 
   // Handle image_url vs imageUrl field name differences
-  const imageSource = artwork.image_url || artwork.imageUrl;
+  const imageSource = artwork.image_url || artwork.imageUrl || null;
   const imageUrl = createImageSrc(imageSource);
   console.log(`ArtworkDetail: Image for ${artwork.title}: ${imageSource} → ${imageUrl}`);
   

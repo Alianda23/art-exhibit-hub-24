@@ -13,8 +13,8 @@ interface ArtworkCardProps {
 }
 
 const ArtworkCard = ({ artwork }: ArtworkCardProps) => {
-  // Handle image_url vs imageUrl field name differences
-  const imageSource = artwork.image_url || artwork.imageUrl;
+  // Handle both image_url and imageUrl field name differences and null values
+  const imageSource = artwork.image_url || artwork.imageUrl || null;
   
   // Process the image URL before rendering - this is crucial
   const imageUrl = createImageSrc(imageSource);

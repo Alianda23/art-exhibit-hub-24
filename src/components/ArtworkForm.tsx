@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { ArtworkData } from "@/services/api";
 import { ImageUp } from "lucide-react";
+import { createImageSrc, handleImageError } from "@/utils/imageUtils";
 
 const MAX_FILE_SIZE = 5000000; // 5MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -46,9 +47,16 @@ const ArtworkForm: React.FC<ArtworkFormProps> = ({
   onCancel,
 }) => {
   const { toast } = useToast();
-  const [previewImage, setPreviewImage] = useState<string | null>(
-    initialData?.imageUrl && initialData.imageUrl.startsWith("http") ? initialData.imageUrl : null
-  );
+  
+  // Process initial image URL if it exists
+  let initialImageUrl = null;
+  if (initialData?.imageUrl) {
+    initialImageUrl = createImageSrc(initialData.imageUrl);
+  } else if (initialData?.image_url) {
+    initialImageUrl = createImageSrc(initialData.image_url);
+  }
+  
+  const [previewImage, setPreviewImage] = useState<string | null>(initialImageUrl);
   const [imageFile, setImageFile] = useState<File | null>(null);
   
   const defaultValues = initialData || {
@@ -107,14 +115,15 @@ const ArtworkForm: React.FC<ArtworkFormProps> = ({
   const handleSubmit = async (values: ArtworkFormValues) => {
     try {
       // If no image was uploaded or changed, use the existing image
-      let imageUrl = initialData?.imageUrl || "";
+      let imageUrl = initialData?.imageUrl || initialData?.image_url || "";
       
       if (imageFile) {
         // Use the local preview data URL as the imageUrl
         imageUrl = previewImage || "";
       }
       
-      if (!imageUrl && !imageFile) {
+      // For new artworks, require an image
+      if (!imageUrl && !imageFile && !initialData) {
         toast({
           variant: "destructive",
           title: "Image Required",
@@ -193,10 +202,7 @@ const ArtworkForm: React.FC<ArtworkFormProps> = ({
                   src={previewImage} 
                   alt="Artwork preview" 
                   className="w-full h-auto rounded-lg"
-                  onError={(e) => {
-                    console.error("Image failed to load:", previewImage);
-                    (e.target as HTMLImageElement).src = '/placeholder.svg';
-                  }}
+                  onError={handleImageError}
                 />
               </div>
             )}
